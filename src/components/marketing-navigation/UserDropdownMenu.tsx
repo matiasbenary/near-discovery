@@ -1,12 +1,13 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useRouter } from 'next/router';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { VmComponent } from '@/components/vm/VmComponent';
 import { useBosComponents } from '@/hooks/useBosComponents';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
+import { NftImage } from './NFTImage_MOVE_ME';
 
 const Wrapper = styled.div`
   > button {
@@ -181,6 +182,20 @@ export const UserDropdownMenu = () => {
   const router = useRouter();
   const components = useBosComponents();
 
+  const [profile, setProfile] = useState<any>({});
+
+  useEffect(() => {
+    async function getProfile() {
+      const profile = await near.viewCall('social.near', 'get', { keys: [`${accountId}/profile/**`] });
+      console.log(profile[accountId].profile);
+      setProfile(profile[accountId].profile);
+    }
+
+    if (!near || !accountId) return;
+
+    getProfile();
+  }, [near, accountId]);
+
   const withdrawStorage = useCallback(async () => {
     if (!near) return;
     await near.contract.storage_withdraw({}, undefined, '1');
@@ -190,17 +205,9 @@ export const UserDropdownMenu = () => {
     <Wrapper>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <VmComponent
-            src={components.profileImage}
-            props={{
-              accountId,
-              className: 'd-inline-block',
-            }}
-          />
+          <NftImage {...profile.image?.nft} alt={accountId} />
           <div className="profile-info">
-            <div className="profile-name">
-              <VmComponent src={components.profileName} />
-            </div>
+            <div className="profile-name">{profile.name || accountId}</div>
             <div className="profile-username">{accountId}</div>
           </div>
           <i className="ph ph-caret-down"></i>

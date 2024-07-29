@@ -12,6 +12,7 @@ import { Search } from './Search';
 import { useNavigationStore } from './store';
 import * as S from './styles';
 import { currentPathMatchesRoute } from './utils';
+import { UserDropdownMenu } from '../marketing-navigation/UserDropdownMenu';
 
 export const Sidebar = () => {
   const router = useRouter();
@@ -181,7 +182,7 @@ export const Sidebar = () => {
 
         <S.ProfileDropdownSection $expanded={isSidebarExpanded}>
           {signedIn ? (
-            <LargeScreenProfileDropdown />
+            <UserDropdownMenu />
           ) : (
             <Tooltip content="Sign-up or Login" side="right" disabled={tooltipsDisabled}>
               <S.LoginItem $active={false} $type="featured" onClick={handleCreateAccount}>
