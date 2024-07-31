@@ -3,11 +3,9 @@ import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
-import { VmComponent } from '@/components/vm/VmComponent';
 import { useBosComponents } from '@/hooks/useBosComponents';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
-import { NftImage } from './NFTImage_MOVE_ME';
 
 const Wrapper = styled.div`
   > button {
@@ -15,64 +13,40 @@ const Wrapper = styled.div`
     display: flex;
     align-items: center;
     border-radius: 50px;
-    background-color: var(--sand12);
-    padding: 4px;
     transition: all 200ms;
-
-    &:hover {
-      background-color: var(--black);
-    }
-
-    &:focus {
-      box-shadow: 0 0 0 4px var(--violet4);
-    }
-  }
-  .d-inline-block {
-    width: unset !important;
-    height: unset !important;
-    img {
-      border-radius: 50% !important;
-      width: 38px !important;
-      height: 38px !important;
-    }
   }
 
-  i {
-    color: #a1a09a;
-    margin: 0 5px 0 0;
+  img {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
   }
 
   .profile-info {
     margin: 0 8px;
     line-height: normal;
     max-width: 110px;
-    font-size: 12px;
+    font-size: 14px;
 
-    .profile-name,
     .profile-username {
       text-overflow: ellipsis;
       overflow: hidden;
     }
-
-    .profile-name {
-      color: white;
-    }
-    .profile-username {
-      color: #a1a09a;
-    }
   }
 
   .DropdownMenuContent {
-    background-color: #161615;
+    background-color: white;
     border-radius: 6px;
     margin-top: 11px;
-    padding: 12px;
+    padding: 8px;
     box-shadow: 0px 10px 38px -10px rgba(22, 23, 24, 0.35), 0px 10px 20px -15px rgba(22, 23, 24, 0.2);
     animation-duration: 600ms;
     animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform, opacity;
     z-index: 10000000;
+    min-width: 220px;
   }
+
   .DropdownMenuContent[data-side='top'] {
     animation-name: slideDownAndFade;
   }
@@ -88,21 +62,28 @@ const Wrapper = styled.div`
 
   .DropdownMenuItem {
     all: unset;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
-    color: #9ba1a6;
+    color: black;
     border-radius: 3px;
     display: flex;
     align-items: center;
-    padding: 12px;
+    padding: 8px 12px;
     position: relative;
     user-select: none;
     outline: none;
+    i {
+      color: #9ba1a6;
+    }
   }
 
   .DropdownMenuItem:hover {
-    color: white;
     cursor: pointer;
+    background-color: var(--sand3);
+    color: var(--sand12);
+    i {
+      color: var(--violet10);
+    }
   }
 
   .DropdownMenuItem i {
@@ -165,11 +146,9 @@ const Wrapper = styled.div`
       padding: 1px;
     }
 
-    .d-inline-block {
-      img {
-        width: 43px !important;
-        height: 43px !important;
-      }
+    img {
+      width: 40px;
+      height: 40px;
     }
   }
 `;
@@ -181,6 +160,7 @@ export const UserDropdownMenu = () => {
   const near = useVmStore((store) => store.near);
   const router = useRouter();
   const components = useBosComponents();
+  const [imageUrl, setImageUrl] = useState('bafkreidoxgv2w7kmzurdnmflegkthgzaclgwpiccgztpkfdkfzb4265zuu');
 
   const [profile, setProfile] = useState<any>({});
 
@@ -189,6 +169,7 @@ export const UserDropdownMenu = () => {
       const profile = await near.viewCall('social.near', 'get', { keys: [`${accountId}/profile/**`] });
       console.log(profile[accountId].profile);
       setProfile(profile[accountId].profile);
+      setImageUrl(profile[accountId].profile.image.ipfs_cid);
     }
 
     if (!near || !accountId) return;
@@ -205,15 +186,14 @@ export const UserDropdownMenu = () => {
     <Wrapper>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <NftImage {...profile.image?.nft} alt={accountId} />
+          {/* <NftImage {...profile.image?.nft} alt={accountId} /> */}
+          <img src={`https://ipfs.near.social/ipfs/${imageUrl}`} alt={profile.name || accountId} />
           <div className="profile-info">
-            <div className="profile-name">{profile.name || accountId}</div>
-            <div className="profile-username">{accountId}</div>
+            <div className="profile-username">{profile.name || accountId}</div>
           </div>
-          <i className="ph ph-caret-down"></i>
         </DropdownMenu.Trigger>
 
-        <DropdownMenu.Content className="DropdownMenuContent" sideOffset={-5}>
+        <DropdownMenu.Content className="DropdownMenuContent" sideOffset={10}>
           <DropdownMenu.Item
             className="DropdownMenuItem"
             onClick={() => router.push(`/${components.profilePage}?accountId=${accountId}`)}
@@ -233,8 +213,6 @@ export const UserDropdownMenu = () => {
             <i className="ph-duotone ph-sign-out"></i>
             Sign out
           </DropdownMenu.Item>
-
-          <DropdownMenu.Arrow style={{ fill: '#161615' }} />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </Wrapper>
