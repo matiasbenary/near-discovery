@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
+
 import { useVmStore } from '@/stores/vm';
 
 interface Nft {
@@ -57,7 +59,7 @@ export const NftImage: React.FC<NftImageProps> = ({ nft, ipfs_cid, alt }) => {
     if (nftMetadata?.base_uri) setImageUrl(`${nftMetadata.base_uri}/${tokenMedia}`);
     if (tokenMedia.startsWith('Qm') || tokenMedia.startsWith('ba'))
       setImageUrl(`https://ipfs.near.social/ipfs/${tokenMedia}`);
-  }, [nftMetadata, tokenMetadata]);
+  }, [nftMetadata, tokenMetadata, ipfs_cid]);
 
-  return <img src={`https://ipfs.near.social/ipfs/${imageUrl}`} alt={alt} />;
+  return <Image width={40} height={40} src={`https://ipfs.near.social/ipfs/${imageUrl}`} alt={alt} />;
 };

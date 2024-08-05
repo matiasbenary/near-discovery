@@ -4,9 +4,9 @@ import { useBosComponents } from '@/hooks/useBosComponents';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
 
+import { UserDropdownMenu } from '../marketing-navigation/UserDropdownMenu';
 import { VmComponent } from '../vm/VmComponent';
 import * as S from './styles';
-import { UserDropdownMenu } from '../marketing-navigation/UserDropdownMenu';
 
 export const LargeScreenProfileDropdown = () => {
   const components = useBosComponents();

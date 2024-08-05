@@ -3,6 +3,9 @@ const nextConfig = {
   poweredByHeader: false,
   compiler: { styledComponents: true },
   reactStrictMode: true,
+  images: {
+    domains: ['ipfs.near.social'],
+  },
   redirects: async () => {
     return [
       {

@@ -1,11 +1,12 @@
-import { useRouter } from 'next/router';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
 import { useBosComponents } from '@/hooks/useBosComponents';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
+
 import { NftImage } from '../lib/NFTImage';
 
 const Wrapper = styled.div`
@@ -146,11 +147,6 @@ const Wrapper = styled.div`
       background: var(--sand6);
       padding: 1px;
     }
-
-    img {
-      width: 40px;
-      height: 40px;
-    }
   }
 `;
 
@@ -208,6 +204,10 @@ export const UserDropdownMenu = ({ showUsername }: Props) => {
           <DropdownMenu.Item className="DropdownMenuItem" onClick={() => router.push(`/settings`)}>
             <i className="ph ph-gear"></i>
             Settings
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className="DropdownMenuItem" onClick={() => router.push(`/settings`)}>
+            <i className="ph ph-wallet"></i>
+            Wallet Utilities
           </DropdownMenu.Item>
           <DropdownMenu.Item className="DropdownMenuItem" onClick={() => withdrawStorage()}>
             <i className="ph-duotone ph-bank"></i>
