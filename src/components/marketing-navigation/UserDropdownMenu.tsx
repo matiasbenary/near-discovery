@@ -1,5 +1,5 @@
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useRouter } from 'next/router';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 
@@ -154,7 +154,11 @@ const Wrapper = styled.div`
   }
 `;
 
-export const UserDropdownMenu = ({ showUsername = true }) => {
+type Props = {
+  showUsername?: boolean;
+};
+
+export const UserDropdownMenu = ({ showUsername }: Props) => {
   const accountId = useAuthStore((store) => store.accountId);
   const availableStorage = useAuthStore((store) => store.availableStorage);
   const logOut = useAuthStore((store) => store.logOut);
