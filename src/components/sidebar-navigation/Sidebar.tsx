@@ -109,6 +109,13 @@ export const Sidebar = () => {
               </S.NavigationItem>
             </Tooltip>
 
+            <Tooltip content="Tools" side="right" disabled={tooltipsDisabled}>
+              <S.NavigationItem $active={isNavigationItemActive('/tools')} $type="featured" href="/tools">
+                <i className="ph-wrench ph-bold" />
+                <span>Tools</span>
+              </S.NavigationItem>
+            </Tooltip>
+
             <Tooltip content="Events" side="right" disabled={tooltipsDisabled}>
               <S.NavigationItem $active={false} $type="featured" href="https://near.org/events" target="_blank">
                 <i className="ph-calendar ph-bold" />
