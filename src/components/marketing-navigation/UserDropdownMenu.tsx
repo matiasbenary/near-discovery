@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { useBosComponents } from '@/hooks/useBosComponents';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
+import { NftImage } from '../lib/NFTImage';
 
 const Wrapper = styled.div`
   > button {
@@ -153,14 +154,13 @@ const Wrapper = styled.div`
   }
 `;
 
-export const UserDropdownMenu = () => {
+export const UserDropdownMenu = ({ showUsername = true }) => {
   const accountId = useAuthStore((store) => store.accountId);
   const availableStorage = useAuthStore((store) => store.availableStorage);
   const logOut = useAuthStore((store) => store.logOut);
   const near = useVmStore((store) => store.near);
   const router = useRouter();
   const components = useBosComponents();
-  const [imageUrl, setImageUrl] = useState('bafkreidoxgv2w7kmzurdnmflegkthgzaclgwpiccgztpkfdkfzb4265zuu');
 
   const [profile, setProfile] = useState<any>({});
 
@@ -169,7 +169,6 @@ export const UserDropdownMenu = () => {
       const profile = await near.viewCall('social.near', 'get', { keys: [`${accountId}/profile/**`] });
       console.log(profile[accountId].profile);
       setProfile(profile[accountId].profile);
-      setImageUrl(profile[accountId].profile.image.ipfs_cid);
     }
 
     if (!near || !accountId) return;
@@ -186,11 +185,12 @@ export const UserDropdownMenu = () => {
     <Wrapper>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          {/* <NftImage {...profile.image?.nft} alt={accountId} /> */}
-          <img src={`https://ipfs.near.social/ipfs/${imageUrl}`} alt={profile.name || accountId} />
-          <div className="profile-info">
-            <div className="profile-username">{profile.name || accountId}</div>
-          </div>
+          <NftImage {...profile.image} alt={profile.name || accountId} />
+          {showUsername && (
+            <div className="profile-info">
+              <div className="profile-username">{profile.name || accountId}</div>
+            </div>
+          )}
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Content className="DropdownMenuContent" sideOffset={10}>
