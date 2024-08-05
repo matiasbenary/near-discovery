@@ -23,8 +23,6 @@ interface TokenMetadata {
 }
 
 export const NftImage: React.FC<NftImageProps> = ({ nft, ipfs_cid, alt }) => {
-  console.log('NFTImage_MOVE_ME.tsx: nft', ipfs_cid);
-
   const near = useVmStore((store) => store.near);
   const [imageUrl, setImageUrl] = useState<string>('bafkreidoxgv2w7kmzurdnmflegkthgzaclgwpiccgztpkfdkfzb4265zuu');
   const [nftMetadata, setNftMetadata] = useState<NftMetadata | null>(null);

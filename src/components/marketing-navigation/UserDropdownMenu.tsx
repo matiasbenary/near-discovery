@@ -167,7 +167,6 @@ export const UserDropdownMenu = ({ showUsername }: Props) => {
   useEffect(() => {
     async function getProfile() {
       const profile = await near.viewCall('social.near', 'get', { keys: [`${accountId}/profile/**`] });
-      console.log(profile[accountId].profile);
       setProfile(profile[accountId].profile);
     }
 
