@@ -204,7 +204,7 @@ export const UserDropdownMenu = ({ showUsername }: Props) => {
             <i className="ph ph-gear"></i>
             Settings
           </DropdownMenu.Item>
-          <DropdownMenu.Item className="DropdownMenuItem" onClick={() => router.push(`/settings`)}>
+          <DropdownMenu.Item className="DropdownMenuItem" onClick={() => router.push(`/wallet-utilities`)}>
             <i className="ph ph-wallet"></i>
             Wallet Utilities
           </DropdownMenu.Item>
