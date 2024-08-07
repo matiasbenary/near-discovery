@@ -79,21 +79,6 @@ const CardIcon = styled.div`
 `;
 
 const ToolsPage: NextPageWithLayout = () => {
-  const near = useVmStore((store) => store.near);
-  const accountId = useAuthStore((store) => store.accountId);
-  const [keys, setKeys] = useState([]);
-
-  useEffect(() => {
-    if (!near && !accountId) return;
-    const getInfo = async () => {
-      const { nearConnection } = near;
-      const account = await nearConnection.account(accountId);
-      setKeys(await account.getAccessKeys());
-    };
-
-    getInfo();
-  }, [near]);
-
   return (
     <SearchContainer>
       <CardContainer>
@@ -114,9 +99,7 @@ const ToolsPage: NextPageWithLayout = () => {
           <CardIcon><i className="ph ph-gift"></i></CardIcon>
         </Card>
       </CardContainer>
-      {keys.map((data, index) => (
-        <AccessKeyTable key={index} data={data} />
-      ))}
+      <AccessKeyTable />
     </SearchContainer>
   );
 };

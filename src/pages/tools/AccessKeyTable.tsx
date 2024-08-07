@@ -1,77 +1,133 @@
+import { useAuthStore } from '@/stores/auth';
+import { useVmStore } from '@/stores/vm';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { networkId } from '@/utils/config';
+import { connect, transactions } from 'near-api-js';
+import { Action } from 'near-api-js/lib/transaction';
 
-const Card = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 16px;
-  margin-bottom: 16px;
+const Panel = styled.div`
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
 `;
 
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-const Title = styled.h2`
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-`;
-
-const DeauthorizeButton = styled.button`
-  background-color: #f1f3f5;
-  color: #ff4d4f;
+const Button = styled.button`
+  background-color: #f44336;
+  color: white;
+  padding: 10px 15px;
   border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 14px;
   cursor: pointer;
 `;
 
-const PublicKey = styled.div`
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  padding: 12px;
-  font-family: monospace;
-  font-size: 14px;
-  word-break: break-all;
-  margin-bottom: 16px;
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
 `;
 
-const FeeAllowance = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+const Th = styled.th`
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
 `;
 
-const Label = styled.span`
-  font-size: 16px;
-  color: #6c757d;
+const Td = styled.td`
+  border: 1px solid #ddd;
+  padding: 8px;
 `;
 
-const Value = styled.span`
-  font-size: 16px;
-  font-weight: 600;
-`;
+const AccessKeyCard = () => {
+  const near = useVmStore((store) => store.near);
+  const accountId = useAuthStore((store) => store.accountId);
+  const [keys, setKeys] = useState([]);
+  const wallet = useAuthStore((store) => store.wallet);
 
-const AccessKeyCard = ({ data }) => {
+  const [selectedKeys, setSelectedKeys] = useState([]);
+
+  useEffect(() => {
+    if (!near || !accountId ) return;
+    const getInfo = async () => {
+      const { nearConnection } = near;
+      const account = await nearConnection.account(accountId);
+      let accessKeys = await account.getAccessKeys();
+      setKeys(accessKeys.filter(accessKey => accessKey.access_key.permission !== 'FullAccess'));
+    };
+    getInfo();
+  }, [near,accountId]);
+
   const truncatePublicKey = (key) => `${key.slice(0, 20)}...${key.slice(-20)}`;
 
+  const handleSelectAll = () => {
+    console.log("pepe count",keys.length);
+    if (selectedKeys.length === keys.length) {
+      setSelectedKeys([]);
+    } else {
+      setSelectedKeys(keys.map(key => key.public_key));
+    }
+  };
+
+  const handleSelect = (id) => {
+    setSelectedKeys((prev) => 
+      prev.includes(id) ? prev.filter((keyId) => keyId !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeauthorizeAll = async() => {
+    if (!accountId || !wallet) return;
+    // console.log("pepe 1");
+    
+    // const actions = selectedKeys.map(key => transactions.deleteKey(key));
+    // console.log("pepe 2");
+    // const { nearConnection } = near;
+    // const account = await nearConnection.account(accountId);
+    // console.log("pepe 3");
+    // await wallet.signAndSendTransaction({receiverId:accountId, actions:actions});
+    // console.log("pepe 4",accountId, actions,selectedKeys);
+    // const { nearConnection } = near;
+    const actions: Action[] = selectedKeys.map((publicKey) => ({
+      type: 'DeleteKey',
+      params: {
+        publicKey: publicKey,
+      },
+    }));
+    
+    wallet.signAndSendTransaction({receiverId:accountId, actions});
+  };
+
   return (
-    <Card>
-      <Header>
-        <Title>{data.access_key.permission.FunctionCall?.receiver_id ?? 'Hola'}</Title>
-        <DeauthorizeButton>Deauthorize</DeauthorizeButton>
-      </Header>
-      <PublicKey>{truncatePublicKey(data.public_key)}</PublicKey>
-      <FeeAllowance>
-        <Label>Fee Allowance</Label>
-        <Value>{parseFloat(data.access_key.permission.FunctionCall?.allowance ?? 0) / 1e24} NEAR</Value>
-      </FeeAllowance>
-    </Card>
+    <div>
+      <Panel>
+        <Button onClick={handleDeauthorizeAll}>Deauthorize selected {selectedKeys.length} - {keys.length}</Button>
+      </Panel>
+      <Table>
+        <thead>
+          <tr>
+            <Th>
+              <input type="checkbox" onChange={handleSelectAll} checked={selectedKeys.length === keys.length} />
+            </Th>
+            <Th>Receiver ID</Th>
+            <Th>Keys</Th>
+            <Th>Fee Allowance</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {keys.map((data) => (
+            <tr key={data.public_key}>
+              <Td>
+                <input
+                  type="checkbox"
+                  onChange={() => handleSelect(data.public_key)}
+                  checked={selectedKeys.includes(data.public_key)}
+                />
+              </Td>
+              <Td>{data.access_key.permission.FunctionCall?.receiver_id ?? 'Hola'}</Td>
+              <Td>{truncatePublicKey(data.public_key)}</Td>
+              <Td>{parseFloat(data.access_key.permission.FunctionCall?.allowance ?? 0) / 1e24} NEAR</Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
   );
 };
 
