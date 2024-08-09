@@ -2,105 +2,112 @@ import { useDefaultLayout } from '@/hooks/useLayout';
 import { useAuthStore } from '@/stores/auth';
 import { useVmStore } from '@/stores/vm';
 import type { NextPageWithLayout } from '@/utils/types';
-import styled,{ css } from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useEffect, useState } from 'react';
 import AccessKeyTable from './AccessKeyTable';
+import { Card, Container, Grid, Section, SvgIcon, Text } from '@near-pagoda/ui';
+import { Coin, Gift, ImageSquare, Key } from '@phosphor-icons/react';
+import FungibleToken from './FungibleToken';
 
-const SearchContainer = styled.div`
-  font-family: Arial, sans-serif;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-grow: 1;
-  
-  @media (max-width: 768px) {
-    padding: 10px;
-  }
-`;
+// const Container = styled.div`
+//   font-family: Arial, sans-serif;
+//   max-width: 800px;
+//   margin: 0 auto;
+//   padding: 20px;
+//   display: flex;
+//   flex-direction: column;
+//   align-items: center;
+//   flex-grow: 1;
 
-const CardContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  width: 800px;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
+//   @media (max-width: 768px) {
+//     padding: 10px;
+//   }
+// `;
 
-const Card = styled.div<{disabled:boolean}>`
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 15px;
-  margin: 10px 0;
+const CardSelection = styled(Card)<{ disabled: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: calc(25% - 20px);
-  transition: opacity 0.3s ease;
-  
-  @media (max-width: 768px) {
-    width: 100%;
-    margin: 10px 0;
+  padding: 20px;
+  margin: 10px;
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.05);
   }
 
-  ${props => props.disabled && css`
-    opacity: 0.5;
-    cursor: not-allowed;
-    
-    &:hover {
+  ${(props) =>
+    props.disabled &&
+    css`
       opacity: 0.5;
-    }
-  `}
+      cursor: not-allowed;
 
-  ${props => !props.disabled && css`
-    cursor: pointer;
-    
-    &:hover {
+      &:hover {
+        opacity: 0.5;
+      }
+    `}
+
+  ${(props) =>
+    !props.disabled &&
+    css`
       cursor: pointer;
-      background-color: #f9f9f9;
-    }
-  `}
+
+      &:hover {
+        cursor: pointer;
+        background-color: #f9f9f9;
+      }
+    `}
 `;
 
-const CardHeader = styled.div`
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
-`;
+const Content = styled.div`
+  margin-top: 20px;
+  /* width: 100%; */
+`
 
-const CardIcon = styled.div`
-  font-size: 24px;
-`;
+const ToolsPageContent = ({ activeTab }:{activeTab:string}) => {
+  const foundComponent = componentsMap.find((item) => item.key === activeTab);
+  return foundComponent ? foundComponent.component : null;
+};
+
+const componentsMap = [
+  { key: 'keys', component: <AccessKeyTable /> },
+  { key: 'ft', component: <FungibleToken /> },
+];
+
 
 const ToolsPage: NextPageWithLayout = () => {
+  const [activeTab, setActiveTab] = useState('keys');
+
+  const activeTabFunction = (tab:string) => () => setActiveTab(tab);
   return (
-    <SearchContainer>
-      <CardContainer>
-        <Card disabled={false}>
-          <CardHeader>Keys</CardHeader>
-          <CardIcon><i className="ph ph-key"></i></CardIcon>
-        </Card>
-        <Card disabled={true}>
-          <CardHeader>FT</CardHeader>
-          <CardIcon><i className="ph ph-coins"></i></CardIcon>
-        </Card>
-        <Card disabled={true}>
-          <CardHeader>NFT</CardHeader>
-          <CardIcon><i className="ph ph-image-square"></i></CardIcon>
-        </Card>
-        <Card disabled={true}>
-          <CardHeader>Airdops</CardHeader>
-          <CardIcon><i className="ph ph-gift"></i></CardIcon>
-        </Card>
-      </CardContainer>
-      <AccessKeyTable />
-    </SearchContainer>
+    
+    <Section grow="available" style={{ background: 'var(--sand3)' }}>
+      <Container size="m">
+      <Grid columns="1fr 1fr 1fr 1fr" columnsTablet="1fr 1fr" columnsPhone="1fr">
+        <CardSelection disabled={false} onClick={activeTabFunction('keys')}>
+          <SvgIcon icon={<Key weight="duotone" />} size="l" color={activeTab == "keys"?'black':"violet8"} />
+          <Text>Keys</Text>
+        </CardSelection>
+        <CardSelection disabled={false} onClick={activeTabFunction('ft')}>
+          <SvgIcon icon={<Coin weight="duotone" />} size="l" color={activeTab == "ft"?'black':"violet8"}/>
+          <Text>FT</Text>
+        </CardSelection>
+        <CardSelection disabled={true} onClick={activeTabFunction('nft')}>
+          <SvgIcon icon={<ImageSquare weight="duotone" />} size="l" />
+          <Text>NFT</Text>
+        </CardSelection>
+        <CardSelection disabled={true} onClick={activeTabFunction('airdrops')}>
+          <SvgIcon icon={<Gift weight="duotone" />} size="l" />
+          <Text>Airdops</Text>
+        </CardSelection>
+      </Grid>
+      <Content>
+        <ToolsPageContent activeTab={activeTab} />
+      </Content>
+      </Container>
+    </Section>
   );
 };
 
