@@ -7,6 +7,7 @@ import { Coin, Gift, ImageSquare, ImagesSquare, Key } from '@phosphor-icons/reac
 import { useAuthStore } from '@/stores/auth';
 import { useSignInRedirect } from '@/hooks/useSignInRedirect';
 import FungibleToken from '@/components/tools/FungibleToken';
+import NonFungibletoken from '@/components/tools/NonFungibleToken';
 
 const ToolsPage: NextPageWithLayout = () => {
   const router = useRouter();
@@ -30,14 +31,14 @@ const ToolsPage: NextPageWithLayout = () => {
                     FT
                   </Tabs.Trigger>
 
-                  <Tabs.Trigger href="?tab=nft" value="nft" disabled>
+                  <Tabs.Trigger href="?tab=nft" value="nft">
                     <SvgIcon icon={<ImagesSquare fill="bold" />} />
                     NFT
                   </Tabs.Trigger>
 
-                  <Tabs.Trigger href="?tab=export" value="export" disabled>
+                  <Tabs.Trigger href="?tab=linkdrops" value="linkdrops">
                     <SvgIcon icon={<Gift fill="bold" />} />
-                    Airdops
+                    Linkdrops
                   </Tabs.Trigger>
                 </Tabs.List>
 
@@ -45,9 +46,13 @@ const ToolsPage: NextPageWithLayout = () => {
                   <FungibleToken/>
                 </Tabs.Content>
 
-                <Tabs.Content value="receive"></Tabs.Content>
+                <Tabs.Content value="nft">
+                  <NonFungibletoken/>
+                </Tabs.Content>
 
-                <Tabs.Content value="export"></Tabs.Content>
+                <Tabs.Content value="linkdrops">
+                Linkdops
+                </Tabs.Content>
               </Tabs.Root>
             </Card>
           ) : (

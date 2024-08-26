@@ -36,6 +36,8 @@ export const Search = ({ inputRef }: { inputRef: any }) => {
         return <div>No results found for &quot;{debouncedSearchTerm}&quot;</div>;
       }
 
+      if(rawResp?.error) return <div>No results found </div>
+      
       switch (type) {
         case 'Docs':
           return rawResp.hits.map((item: any, index: number) => <DocsResults key={index} item={item} />);
