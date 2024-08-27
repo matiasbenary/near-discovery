@@ -1,20 +1,22 @@
 import { Button, Card, Container, Flex, Section, SvgIcon, Tabs } from '@near-pagoda/ui';
 import { Text } from '@near-pagoda/ui';
-import { HandCoins, LockKeyOpen, PaperPlaneTilt } from '@phosphor-icons/react';
+import { HandCoins, Key, LockKeyOpen, PaperPlaneTilt } from '@phosphor-icons/react';
 import { useRouter } from 'next/router';
+import { useContext } from 'react';
 
 import { ExportFastAuthAccount } from '@/components/wallet-utilities/ExportFastAuthAccount';
+import KeyTable from '@/components/wallet-utilities/KeyTable';
 import { ReceiveNear } from '@/components/wallet-utilities/ReceiveNear';
 import { SendNear } from '@/components/wallet-utilities/SendNear';
+import { NearContext } from '@/components/WalletSelector';
 import { useDefaultLayout } from '@/hooks/useLayout';
 import { useSignInRedirect } from '@/hooks/useSignInRedirect';
-import { useAuthStore } from '@/stores/auth';
 import type { NextPageWithLayout } from '@/utils/types';
 
 const WalletUtilitiesPage: NextPageWithLayout = () => {
   const router = useRouter();
   const selectedTab = (router.query.tab as string) || 'send';
-  const signedIn = useAuthStore((store) => store.signedIn);
+  const signedAccountId = useContext(NearContext);
   const { requestAuthentication } = useSignInRedirect();
 
   return (
@@ -25,7 +27,7 @@ const WalletUtilitiesPage: NextPageWithLayout = () => {
             Wallet Utilities
           </Text>
 
-          {signedIn ? (
+          {signedAccountId ? (
             <Card style={{ paddingTop: 0 }}>
               <Tabs.Root value={selectedTab}>
                 <Tabs.List style={{ marginBottom: 'var(--gap-m)' }}>
@@ -43,6 +45,11 @@ const WalletUtilitiesPage: NextPageWithLayout = () => {
                     <SvgIcon icon={<LockKeyOpen fill="bold" />} />
                     Export Account
                   </Tabs.Trigger>
+
+                  <Tabs.Trigger href="?tab=key" value="key">
+                    <SvgIcon icon={<Key fill="bold" />} />
+                    Apps
+                  </Tabs.Trigger>
                 </Tabs.List>
 
                 <Tabs.Content value="send">
@@ -55,6 +62,10 @@ const WalletUtilitiesPage: NextPageWithLayout = () => {
 
                 <Tabs.Content value="export">
                   <ExportFastAuthAccount />
+                </Tabs.Content>
+
+                <Tabs.Content value="key">
+                  <KeyTable />
                 </Tabs.Content>
               </Tabs.Root>
             </Card>

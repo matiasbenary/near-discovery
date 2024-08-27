@@ -7,31 +7,31 @@ import '@near-wallet-selector/modal-ui/styles.css';
 import 'react-bootstrap-typeahead/css/Typeahead.css';
 import 'react-bootstrap-typeahead/css/Typeahead.bs5.css';
 
-import { openToast, Toaster } from '@near-pagoda/ui';
+import { openToast, PagodaUiProvider, Toaster } from '@near-pagoda/ui';
 import Gleap from 'gleap';
 import type { AppProps } from 'next/app';
-import dynamic from 'next/dynamic';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
 import { useEffect } from 'react';
+import { useState } from 'react';
 
 import { CookiePrompt } from '@/components/CookiePrompt';
 import { ResearchFormWizard } from '@/components/research-form-wizard/ResearchFormWizard';
+import { NearContext, Wallet } from '@/components/WalletSelector';
 import { useBosLoaderInitializer } from '@/hooks/useBosLoaderInitializer';
 import { useClickTracking } from '@/hooks/useClickTracking';
 import { useHashUrlBackwardsCompatibility } from '@/hooks/useHashUrlBackwardsCompatibility';
 import { usePageAnalytics } from '@/hooks/usePageAnalytics';
-import { useAuthStore } from '@/stores/auth';
+import { useCookieStore } from '@/stores/cookieData';
+import { useResearchWizardStore } from '@/stores/researchWizard';
 import { init as initializeAnalytics, recordHandledError, setReferrer } from '@/utils/analytics';
-import { gleapSdkToken } from '@/utils/config';
+import { initPostHog, PostHogTrackingProvider } from '@/utils/analytics-posthog';
+import { gleapSdkToken, networkId, signInContractId } from '@/utils/config';
 import { setNotificationsLocalStorage } from '@/utils/notificationsLocalStorage';
 import type { NextPageWithLayout } from '@/utils/types';
 import { styleZendesk } from '@/utils/zendesk';
-
-const VmInitializer = dynamic(() => import('../components/vm/VmInitializer'), {
-  ssr: false,
-});
 
 type AppPropsWithLayout = AppProps & {
   Component: NextPageWithLayout;
@@ -41,14 +41,24 @@ if (typeof window !== 'undefined') {
   if (gleapSdkToken) Gleap.initialize(gleapSdkToken);
 }
 
+const wallet = new Wallet({ createAccessKeyFor: signInContractId, networkId: networkId });
+initPostHog();
+
 export default function App({ Component, pageProps }: AppPropsWithLayout) {
   useBosLoaderInitializer();
   useHashUrlBackwardsCompatibility();
   usePageAnalytics();
   useClickTracking();
+  const checkCookieData = useCookieStore((state) => state.checkCookieData);
+  const cookieData = useCookieStore((state) => state.cookieData);
+  const isResearchFormDismissed = useResearchWizardStore((state) => state.isResearchFormDismissed);
   const getLayout = Component.getLayout ?? ((page) => page);
   const router = useRouter();
-  const signedIn = useAuthStore((store) => store.signedIn);
+  const [signedAccountId, setSignedAccountId] = useState('');
+
+  useEffect(() => {
+    wallet.startUp(setSignedAccountId);
+  }, []);
 
   useEffect(() => {
     const referred_from_wallet = document.referrer.indexOf('https://wallet.near.org/') !== -1;
@@ -67,10 +77,10 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
 
   useEffect(() => {
     // this check is needed to init localStorage for notifications after user signs in
-    if (signedIn) {
+    if (signedAccountId) {
       setNotificationsLocalStorage();
     }
-  }, [signedIn]);
+  }, [signedAccountId]);
 
   useEffect(() => {
     router.events.on('routeChangeStart', () => {
@@ -102,47 +112,60 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
     };
   }, []);
 
+  // needed by fast auth to show the wallet selector when the user chooses "use a wallet"
+  useEffect(() => {
+    const handleShowWalletSelector = (e: MessageEvent<{ showWalletSelector: boolean }>) => {
+      if (e.data.showWalletSelector) {
+        wallet.signIn();
+      }
+    };
+
+    window.addEventListener('message', handleShowWalletSelector, false);
+    return () => {
+      window.removeEventListener('message', handleShowWalletSelector, false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cookieData || !isResearchFormDismissed) {
+      Gleap.showFeedbackButton(false);
+    } else {
+      Gleap.showFeedbackButton(true);
+    }
+  }, [isResearchFormDismissed, cookieData]);
+
+  useEffect(() => {
+    checkCookieData();
+  }, [checkCookieData]);
+
   return (
-    <>
-      <Head>
-        <meta name="google-site-verification" content="CDEVFlJTyVZ2vM7ePugKgWsl_7Rd-MrfDv42u0vZ0B0" />
-        <link rel="icon" href="favicon.ico" />
-        <link rel="canonical" href={`${process.env.NEXT_PUBLIC_HOSTNAME}${router.asPath}`} key="canonical" />
-        <link rel="manifest" href="manifest.json" />
-      </Head>
+    <NearContext.Provider value={{ wallet, signedAccountId }}>
+      <PagodaUiProvider
+        value={{
+          routerPrefetch: router.prefetch,
+          routerPush: router.push,
+          Link,
+        }}
+      >
+        <Head>
+          <meta name="google-site-verification" content="CDEVFlJTyVZ2vM7ePugKgWsl_7Rd-MrfDv42u0vZ0B0" />
+          <link rel="icon" href="favicon.ico" />
+          <link rel="canonical" href={`${process.env.NEXT_PUBLIC_HOSTNAME}${router.asPath}`} key="canonical" />
+          <link rel="manifest" href="manifest.json" />
+        </Head>
 
-      <Script id="phosphor-icons" src="https://unpkg.com/@phosphor-icons/web" async />
+        <Script id="phosphor-icons" src="https://unpkg.com/@phosphor-icons/web" async />
 
-      <Script id="bootstrap" src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" />
+        <Script id="bootstrap" src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" />
 
-      <VmInitializer />
+        <PostHogTrackingProvider>{getLayout(<Component {...pageProps} />)}</PostHogTrackingProvider>
 
-      {getLayout(<Component {...pageProps} />)}
+        <Toaster />
 
-      <Toaster />
+        <CookiePrompt />
 
-      <CookiePrompt />
-
-      <ResearchFormWizard />
-
-      <div
-        id="idos_container"
-        style={
-          !router.route.startsWith('/settings')
-            ? ({
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: 0,
-                height: 0,
-                margin: 0,
-                padding: 0,
-                opacity: 0,
-                overflow: 'hidden',
-              } as React.CSSProperties)
-            : undefined
-        }
-      />
-    </>
+        <ResearchFormWizard />
+      </PagodaUiProvider>
+    </NearContext.Provider>
   );
 }

@@ -1,13 +1,15 @@
 import { Dropdown, SvgIcon } from '@near-pagoda/ui';
-import { Bank, Gear, SignOut, User, Wallet } from '@phosphor-icons/react';
+import { Bank, SignOut, User, Wallet } from '@phosphor-icons/react';
 import { useRouter } from 'next/router';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useContext } from 'react';
 import styled from 'styled-components';
 
-import { VmComponent } from '@/components/vm/VmComponent';
 import { useBosComponents } from '@/hooks/useBosComponents';
-import { useAuthStore } from '@/stores/auth';
-import { useVmStore } from '@/stores/vm';
+import { signInContractId } from '@/utils/config';
+
+import { NftImage } from '../NTFImage';
+import { NearContext } from '../WalletSelector';
 
 const Wrapper = styled.div`
   flex-grow: 1;
@@ -45,11 +47,6 @@ const Wrapper = styled.div`
   .d-inline-block {
     width: unset !important;
     height: unset !important;
-    img {
-      border-radius: 50% !important;
-      width: 38px !important;
-      height: 38px !important;
-    }
   }
 
   i {
@@ -88,13 +85,6 @@ const Wrapper = styled.div`
       background: var(--sand6);
       padding: 1px;
     }
-
-    .d-inline-block {
-      img {
-        width: 43px !important;
-        height: 43px !important;
-      }
-    }
   }
 `;
 
@@ -103,17 +93,43 @@ type Props = {
 };
 
 export const UserDropdownMenu = ({ collapsed }: Props) => {
-  const accountId = useAuthStore((store) => store.accountId);
-  const availableStorage = useAuthStore((store) => store.availableStorage);
-  const logOut = useAuthStore((store) => store.logOut);
-  const near = useVmStore((store) => store.near);
+  const { wallet, signedAccountId } = useContext(NearContext);
   const router = useRouter();
   const components = useBosComponents();
 
+  const [availableStorage, setAvailableStorage] = useState<bigint>(BigInt(0));
+
   const withdrawStorage = useCallback(async () => {
-    if (!near) return;
-    await near.contract.storage_withdraw({}, undefined, '1');
-  }, [near]);
+    if (!wallet) return;
+    await wallet.callMethod({ contractId: signInContractId, method: 'storage_withdraw', deposit: '1' });
+  }, [wallet]);
+
+  const [profile, setProfile] = useState<any>({});
+
+  useEffect(() => {
+    async function getProfile() {
+      const profile = await wallet?.viewMethod({
+        contractId: 'social.near',
+        method: 'get',
+        args: { keys: [`${signedAccountId}/profile/**`] },
+      });
+      if (!profile[signedAccountId]) return;
+      setProfile(profile[signedAccountId].profile);
+    }
+
+    async function getAvailableStorage() {
+      const storage: any = await wallet?.viewMethod({
+        contractId: signInContractId,
+        method: 'storage_balance_of',
+        args: { account_id: signedAccountId },
+      });
+      setAvailableStorage(BigInt(storage.available) / BigInt(10 ** 19));
+    }
+
+    if (!wallet || !signedAccountId) return;
+    getProfile();
+    getAvailableStorage();
+  }, [wallet, signedAccountId]);
 
   return (
     <Wrapper>
@@ -124,41 +140,35 @@ export const UserDropdownMenu = ({ collapsed }: Props) => {
           </Dropdown.Trigger>
         ) : (
           <Dropdown.Trigger>
-            <VmComponent
-              src={components.profileImage}
-              props={{
-                accountId,
-                className: 'd-inline-block',
-              }}
+            <NftImage
+              nft={profile.image?.nft}
+              ipfs_cid={profile.image?.ipfs_cid}
+              alt={profile.name || signedAccountId}
             />
             <div className="profile-info">
-              <div className="profile-name">
-                <VmComponent src={components.profileName} />
-              </div>
-              <div className="profile-username">{accountId}</div>
+              <div className="profile-name">{profile.name}</div>
+              <div className="profile-username">{signedAccountId}</div>
             </div>
             <i className="ph ph-caret-right"></i>
           </Dropdown.Trigger>
         )}
 
         <Dropdown.Content sideOffset={10}>
-          <Dropdown.Item onSelect={() => router.push(`/${components.profilePage}?accountId=${accountId}`)}>
+          <Dropdown.Item onSelect={() => router.push(`/${components.profilePage}?accountId=${signedAccountId}`)}>
             <SvgIcon icon={<User weight="duotone" />} />
             Profile
-          </Dropdown.Item>
-          <Dropdown.Item onSelect={() => router.push(`/settings`)}>
-            <SvgIcon icon={<Gear weight="duotone" />} />
-            Settings
           </Dropdown.Item>
           <Dropdown.Item onSelect={() => router.push(`/wallet-utilities`)}>
             <SvgIcon icon={<Wallet weight="duotone" />} />
             Wallet Utilities
           </Dropdown.Item>
-          <Dropdown.Item onSelect={() => withdrawStorage()}>
-            <SvgIcon icon={<Bank weight="duotone" />} />
-            {availableStorage && `Withdraw ${availableStorage.div(1000).toFixed(2)}kb`}
-          </Dropdown.Item>
-          <Dropdown.Item onSelect={() => logOut()}>
+          {availableStorage && availableStorage > BigInt(0) && (
+            <Dropdown.Item onSelect={() => withdrawStorage()}>
+              <SvgIcon icon={<Bank weight="duotone" />} />
+              {`Withdraw ${availableStorage / BigInt(1000)}kb`}
+            </Dropdown.Item>
+          )}
+          <Dropdown.Item onSelect={() => wallet?.signOut()}>
             <SvgIcon icon={<SignOut weight="regular" />} />
             Sign out
           </Dropdown.Item>

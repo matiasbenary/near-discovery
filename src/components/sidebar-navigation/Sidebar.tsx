@@ -2,11 +2,12 @@ import { Tooltip } from '@near-pagoda/ui';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useRef } from 'react';
+import { useContext } from 'react';
 
 import { useSignInRedirect } from '@/hooks/useSignInRedirect';
-import { useAuthStore } from '@/stores/auth';
 
 import { UserDropdownMenu } from '../marketing-navigation/UserDropdownMenu';
+import { NearContext } from '../WalletSelector';
 import NearIconSvg from './icons/near-icon.svg';
 import { Search } from './Search';
 import { useNavigationStore } from './store';
@@ -21,7 +22,7 @@ export const Sidebar = () => {
   const toggleExpandedSidebar = useNavigationStore((store) => store.toggleExpandedSidebar);
   const handleBubbledClickInSidebar = useNavigationStore((store) => store.handleBubbledClickInSidebar);
   const tooltipsDisabled = isSidebarExpanded;
-  const signedIn = useAuthStore((store) => store.signedIn);
+  const { signedAccountId } = useContext(NearContext);
   const { requestAuthentication } = useSignInRedirect();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -117,10 +118,9 @@ export const Sidebar = () => {
             </Tooltip>
 
             <Tooltip content="Events" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem $active={false} $type="featured" href="https://near.org/events" target="_blank">
+              <S.NavigationItem $active={isNavigationItemActive('/events')} $type="featured" href="/events">
                 <i className="ph-calendar ph-bold" />
                 <span>Events</span>
-                <span className="ph-bold ph-arrow-square-out ms-auto outline-none" />
               </S.NavigationItem>
             </Tooltip>
 
@@ -187,9 +187,8 @@ export const Sidebar = () => {
             </Tooltip>
           </S.Stack>
         </S.Section>
-
         <S.ProfileDropdownSection $expanded={isSidebarExpanded}>
-          {signedIn ? (
+          {signedAccountId ? (
             <UserDropdownMenu collapsed={!isSidebarExpanded} />
           ) : (
             <Tooltip content="Sign-up or Login" side="right" disabled={tooltipsDisabled} asChild>
