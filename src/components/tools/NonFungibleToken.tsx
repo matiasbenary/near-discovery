@@ -1,4 +1,5 @@
 import { Accordion, Text } from "@near-pagoda/ui";
+
 import { DeployStore } from "./DeployStore";
 import MintNft from "./MintNft";
 

@@ -1,7 +1,9 @@
-import React from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
 import { Button, Flex, Form, Input, openToast } from '@near-pagoda/ui';
-import { useAuthStore } from '@/stores/auth';
+import React, { useContext } from 'react';
+import type { SubmitHandler} from 'react-hook-form';
+import {useForm } from 'react-hook-form';
+
+import { NearContext } from '../WalletSelector';
 
 type FormData = {
   owner_id: string;
@@ -14,11 +16,10 @@ type FormData = {
 
 export const CreateTokenForm: React.FC = () => {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>();
-  const wallet = useAuthStore((store) => store.wallet);
-  const accountId = useAuthStore((store) => store.accountId);
+
+  const { wallet, signedAccountId } = useContext(NearContext);
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
-    if (!wallet) throw new Error('Wallet has not initialized yet');
     try {
       const args = {
         args: {
@@ -34,33 +35,34 @@ export const CreateTokenForm: React.FC = () => {
         },
         account_id: data.owner_id,
       };
+
+      const requiredDeposit = await wallet?.viewMethod({ contractId: 'tkn.near', method: 'get_required_deposit', args });
       // near call mg.tkn.near storage_deposit '{"account_id": "maguila.near"}' --depositYocto 1250000000000000000000 --accountId maguila.near
       // near call mg.tkn.near ft_transfer '{"receiver_id": "maguila.near", "amount": "1000"}' --depositYocto 1 --accountId maguila.near
       // near view  mg.tkn.near ft_balance_of '{"account_id": "maguila.near"}' --networkId mainnet
       // --networkId mainnet
-    const result = await wallet.signAndSendTransaction({
-      receiverId: "tkn.near",
-      actions: [
-        {
-          type: 'FunctionCall',
-          params: {
-            methodName: 'create_token',
-            args,
-            gas: "300000000000000",
-            deposit: "2234830000000000000000000"
-          },
-        },
-      ],
-    });
+      const result = await wallet?.signAndSendTransactions({
+        transactions: [{
+          receiverId: "tkn.near",
+          actions: [
+            {
+              type: 'FunctionCall',
+              params: {
+                methodName: 'create_token',
+                args,
+                gas: "300000000000000",
+                deposit: requiredDeposit
+              },
+            },
+          ],
+        }]
+      });
 
-    if (result) {
-      const transactionId = result.transaction_outcome.id;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      window.open(`https://nearblocks.io/txns/${transactionId}`, '_blank')!.focus();
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      window.open(`https://nearblocks.io/address/${data.owner_id}`, '_blank')!.focus();
-    }
+      if (result) {
+        const transactionId = result[0].transaction_outcome.id;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        window.open(`https://nearblocks.io/txns/${transactionId}`, '_blank')!.focus();
+      }
 
       openToast({
         type: 'success',
@@ -85,7 +87,7 @@ export const CreateTokenForm: React.FC = () => {
           label="Owner ID"
           placeholder="e.g., bob.near"
           error={errors.owner_id?.message}
-          {...register('owner_id', { required: 'Owner ID is required', value: accountId })}
+          {...register('owner_id', { required: 'Owner ID is required', value: signedAccountId })}
         />
         <Input
           label="Total Supply"
@@ -116,18 +118,18 @@ export const CreateTokenForm: React.FC = () => {
           type="number"
           placeholder="e.g., 18"
           error={errors.decimals?.message}
-          {...register('decimals', { 
+          {...register('decimals', {
             required: 'Decimals is required',
             valueAsNumber: true,
             min: { value: 0, message: 'Decimals must be non-negative' },
             max: { value: 24, message: 'Decimals must be 24 or less' }
           })}
         />
-        <Button 
-          label="Create Token" 
-          variant="affirmative" 
-          type="submit" 
-          loading={isSubmitting} 
+        <Button
+          label="Create Token"
+          variant="affirmative"
+          type="submit"
+          loading={isSubmitting}
         />
       </Flex>
     </Form>

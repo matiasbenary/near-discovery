@@ -1,7 +1,8 @@
-import { useAuthStore } from '@/stores/auth';
 import { Button, Flex, Form, Input, openToast } from '@near-pagoda/ui';
-import { useEffect, useState } from 'react';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useContext, useEffect, useState } from 'react';
+import type { SubmitHandler} from 'react-hook-form';
+import { useForm } from 'react-hook-form';
+import { NearContext } from '../WalletSelector';
 
 type FormData = {
   title: string;
@@ -20,8 +21,8 @@ const MintNft = () => {
     formState: { errors, isSubmitting },
   } = useForm<FormData>();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const wallet = useAuthStore((store) => store.wallet);
-  const accountId = useAuthStore((store) => store.accountId);
+
+  const { wallet, signedAccountId } = useContext(NearContext);
 
   useEffect(() => {
     const getStores = async () => {
@@ -88,7 +89,7 @@ const MintNft = () => {
         "split_owners": null
       }
 
-      const result = await wallet.signAndSendTransaction({
+      const result = await wallet.signAndSendTransactions({transactions: [{
         receiverId: "tkn.near",
         actions: [
           {
@@ -101,7 +102,7 @@ const MintNft = () => {
             },
           },
         ],
-      });
+      }]});
 
       openToast({
         type: 'success',

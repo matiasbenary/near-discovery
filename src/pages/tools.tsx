@@ -1,18 +1,20 @@
-import { useDefaultLayout } from '@/hooks/useLayout';
-import type { NextPageWithLayout } from '@/utils/types';
-import { useRouter } from 'next/router';
-
 import { Button, Card, Container, Flex, Grid, Section, SvgIcon, Tabs, Text } from '@near-pagoda/ui';
 import { Coin, Gift, ImageSquare, ImagesSquare, Key } from '@phosphor-icons/react';
-import { useAuthStore } from '@/stores/auth';
-import { useSignInRedirect } from '@/hooks/useSignInRedirect';
+import { useRouter } from 'next/router';
+
 import FungibleToken from '@/components/tools/FungibleToken';
 import NonFungibletoken from '@/components/tools/NonFungibleToken';
+import { useDefaultLayout } from '@/hooks/useLayout';
+import { useSignInRedirect } from '@/hooks/useSignInRedirect';
+import type { NextPageWithLayout } from '@/utils/types';
+import { useContext } from 'react';
+import { NearContext } from '@/components/WalletSelector';
 
 const ToolsPage: NextPageWithLayout = () => {
   const router = useRouter();
   const selectedTab = (router.query.tab as string) || 'ft';
-  const signedIn = useAuthStore((store) => store.signedIn);
+  const { signedAccountId } = useContext(NearContext);
+
   const { requestAuthentication } = useSignInRedirect();
   return (
     <Section grow="available" style={{ background: 'var(--sand3)' }}>
@@ -22,7 +24,7 @@ const ToolsPage: NextPageWithLayout = () => {
             Tools
           </Text>
 
-          {signedIn ? (
+          {signedAccountId ? (
             <Card style={{ paddingTop: 0 }}>
               <Tabs.Root value={selectedTab}>
                 <Tabs.List style={{ marginBottom: 'var(--gap-m)' }}>
