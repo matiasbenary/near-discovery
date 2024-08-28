@@ -9,12 +9,16 @@ import { useSignInRedirect } from '@/hooks/useSignInRedirect';
 import type { NextPageWithLayout } from '@/utils/types';
 import { useContext } from 'react';
 import { NearContext } from '@/components/WalletSelector';
+import useFungibleTokens from '@/hooks/useFungibleTokens';
+import useListNftMintbase from '@/hooks/useListNftMintbase';
 
 const ToolsPage: NextPageWithLayout = () => {
   const router = useRouter();
   const selectedTab = (router.query.tab as string) || 'ft';
   const { signedAccountId } = useContext(NearContext);
-
+  const {tokens} = useFungibleTokens();
+  const {stores:storesMintbase,reloadStores:reloadStoresMintbase} = useListNftMintbase();
+  
   const { requestAuthentication } = useSignInRedirect();
   return (
     <Section grow="available" style={{ background: 'var(--sand3)' }}>
@@ -45,11 +49,11 @@ const ToolsPage: NextPageWithLayout = () => {
                 </Tabs.List>
 
                 <Tabs.Content value="ft">
-                  <FungibleToken/>
+                  <FungibleToken tokens={tokens}/>
                 </Tabs.Content>
 
                 <Tabs.Content value="nft">
-                  <NonFungibletoken/>
+                  <NonFungibletoken reloadStoresMintbase={reloadStoresMintbase} storesMintbase={storesMintbase} />
                 </Tabs.Content>
 
                 <Tabs.Content value="linkdrops">

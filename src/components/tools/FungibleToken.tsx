@@ -6,13 +6,9 @@
 
 import { Card, Flex, SvgIcon, Switch, Text, Tooltip } from '@near-pagoda/ui';
 import { CheckFat, ListNumbers, PlusCircle } from '@phosphor-icons/react';
-import { providers } from 'near-api-js';
-import { useContext, useEffect, useState } from 'react';
-
-import whiteList from '@/utils/white-list.json';
+import { useState } from 'react';
 
 import { CreateTokenForm } from './CreateTokenForm';
-import { NearContext } from '../WalletSelector';
 
 const formattedBalance = (balance: string, decimals = 24) => {
   const numericBalance = Number(balance);
@@ -23,52 +19,8 @@ const formattedBalance = (balance: string, decimals = 24) => {
   return result % 1 === 0 ? result.toString() : result.toFixed(5).replace(/\.?0+$/, '');
 };
 
-export const accounts_ft = async (accountId: string) => {
-  const response = await fetch(`https://api.fastnear.com/v1/account/${accountId}/ft`);
-  return await response.json();
-};
-
-const FungibleToken = () => {
-  const { wallet, signedAccountId } = useContext(NearContext);
-  const [tokens, setTokens] = useState([]);
+const FungibleToken = ({tokens}) => {
   const [toggle, setToggle] = useState(false);
-
-  useEffect(() => {
-    if (!wallet || !signedAccountId) return;
-
-    const getInfo = async () => {
-      const res = await accounts_ft(signedAccountId);
-      const tokensWithMetadata = await Promise.all(
-        res.tokens
-          .filter(token => token.balance !== '0')
-          .map(async (token) => {
-            const tokenVerified = whiteList.find((item) => item.token_name === token.contract_id);
-            if (!tokenVerified) {
-              let metadata = {};
-              try {
-                metadata = await wallet.viewMethod({ contractId: token.contract_id, method: 'ft_metadata' });
-              } catch { }
-              return {
-                ...metadata,
-                balance: token.balance,
-                verified: false,
-              };
-            }
-            return {
-              ...tokenVerified,
-              balance: token.balance,
-              verified: true,
-            };
-          }),
-      );
-      setTokens(tokensWithMetadata);
-      // setTokens(whiteList);
-
-    };
-
-    getInfo();
-  }, [wallet, signedAccountId]);
-  console.log(toggle);
 
   return (
     <div>

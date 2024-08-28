@@ -13,8 +13,7 @@ type FormData = {
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
 
-const MintNft = () => {
-  const [stores, setStores] = useState([]);
+const MintNft = ({stores}) => {
   const {
     register,
     handleSubmit,
@@ -23,24 +22,12 @@ const MintNft = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const { wallet, signedAccountId } = useContext(NearContext);
+  console.log("🚀 ~ MintNft ~ storesMintbase:", stores)
+  const [storeSelected, setStoreSelected] = useState(stores[0]);
 
-  useEffect(() => {
-    const getStores = async () => {
-      const response = await fetch('https://graph.mintbase.xyz/testnet', {
-        headers: {
-          'content-type': 'application/json',
-          'mb-api-key': 'omni-site',
-        },
-        body: '{"operationName":"v2_omnisite_GetStoresByMinterOwner","variables":{"id":"maguila.testnet"},"query":"query v2_omnisite_GetStoresByMinterOwner($id: String!) {\\n  mb_store_minters(\\n    where: {_or: [{minter_id: {_eq: $id}}, {nft_contracts: {owner_id: {_eq: $id}}}]}\\n    distinct_on: nft_contract_id\\n  ) {\\n    nft_contract_id\\n    nft_contracts {\\n      owner_id\\n      __typename\\n    }\\n    __typename\\n  }\\n}\\n"}',
-        method: 'POST',
-      });
-      const data = await response.json();
-      setStores(data);
-      console.log(data);
-      
-    };
-    getStores();
-  }, []);
+  const handleSelectChange = (event) => {
+    setStoreSelected(event.target.value);
+  };
 
   const validateImage = (files: FileList) => {
     if (files.length === 0) return 'Image is required';
@@ -61,55 +48,56 @@ const MintNft = () => {
     }
   };
 
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     if (!wallet) throw new Error('Wallet has not initialized yet');
     try {
-      let base64Image = '';
       if (data.image[0]) {
-        base64Image = await convertToBase64(data.image[0]);
-      }
-      const args = {
-        "owner_id": "maguila.testnet",
-        "metadata": {
-          "reference": "s4lMx0LZaApyh_FygAdvRD9YQ0rRuphEt-brA-6mY8Y",
-          "media": "BM8eCqNQ0nNkaYGR939cZS7-UGjCuenKD3FEIVtqOVI",
-          "title": "ert"
-        },
-        "num_to_mint": 1,
-        "royalty_args": null,
-        "split_owners": null
-      }
-
-      const result = await wallet.signAndSendTransactions({transactions: [{
-        receiverId: "tkn.near",
-        actions: [
+        const res = await fetch(
+          "https://ipfs.near.social/add",
           {
-            type: 'FunctionCall',
-            params: {
-              methodName: 'create_token',
-              args,
-              gas: "300000000000000",
-              deposit: "2234830000000000000000000"
-            },
-          },
-        ],
-      }]});
+            method: "POST",
+            headers: { Accept: "application/json" },
+            body: data.image[0]
+          }
+        )
+        console.log("🚀 ~ validateImage ~ res:", res)
+        const file = await res.json();
+        console.log("🚀 ~ validateImage ~ file:", file)
+      }
+      // const args = {
+      //   "owner_id": "maguila.testnet",
+      //   "metadata": {
+      //     "reference": "s4lMx0LZaApyh_FygAdvRD9YQ0rRuphEt-brA-6mY8Y",
+      //     "media": "BM8eCqNQ0nNkaYGR939cZS7-UGjCuenKD3FEIVtqOVI",
+      //     "title": "ert"
+      //   },
+      //   "num_to_mint": 1,
+      //   "royalty_args": null,
+      //   "split_owners": null
+      // }
 
-      openToast({
-        type: 'success',
-        title: 'Form Submitted',
-        description: 'Your form has been submitted successfully',
-        duration: 5000,
-      });
+      // const result = await wallet.signAndSendTransactions({transactions: [{
+      //   receiverId: "tkn.near",
+      //   actions: [
+      //     {
+      //       type: 'FunctionCall',
+      //       params: {
+      //         methodName: 'create_token',
+      //         args,
+      //         gas: "300000000000000",
+      //         deposit: "2234830000000000000000000"
+      //       },
+      //     },
+      //   ],
+      // }]});
+
+      // openToast({
+      //   type: 'success',
+      //   title: 'Form Submitted',
+      //   description: 'Your form has been submitted successfully',
+      //   duration: 5000,
+      // });
     } catch (error) {
       openToast({
         type: 'error',
@@ -123,6 +111,11 @@ const MintNft = () => {
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Flex stack gap="l">
+        <select value={storeSelected} onChange={handleSelectChange}>>
+          {stores.map((store, index) => (
+            <option key={index} value={store.name}>{store.name} - {store.origin}</option>
+          ))}
+        </select>
         <Input
           label="Title"
           placeholder="Enter title"

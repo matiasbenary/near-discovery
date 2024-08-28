@@ -3,13 +3,14 @@ import { Accordion, Text } from "@near-pagoda/ui";
 import { DeployStore } from "./DeployStore";
 import MintNft from "./MintNft";
 
-const NonFungibletoken = () => {
-    return (<Accordion.Root type="multiple">
+const NonFungibletoken = ({storesMintbase,reloadStoresMintbase}) => {
+    const stores = [{name:"nft.primitives.near",origin:"reference"},...storesMintbase.map(store => ({name:store.nft_contract_id,origin:"mintbase"}))]
+    return (<Accordion.Root type="multiple" defaultValue="two">
     <Accordion.Item value="one">
       <Accordion.Trigger>Deploy NFT Contract</Accordion.Trigger>
   
       <Accordion.Content>
-        <DeployStore/>
+        <DeployStore reloadStoresMintbase={reloadStoresMintbase}/>
       </Accordion.Content>
     </Accordion.Item>
   
@@ -17,7 +18,7 @@ const NonFungibletoken = () => {
       <Accordion.Trigger>Mint NFT</Accordion.Trigger>
   
       <Accordion.Content>
-        <MintNft/>
+        <MintNft stores={stores}/>
       </Accordion.Content>
     </Accordion.Item>
   </Accordion.Root>)
