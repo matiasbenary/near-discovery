@@ -77,6 +77,12 @@ const MintNft = ({ stores }) => {
         },
       }
 
+      const string_args = JSON.stringify(args);
+
+      // TODO: Improve, we estimate the cost as 3 times the cost of storing the args
+      const cost_per_byte = 10 ** 19;
+      const estimated_cost = (string_args.length * cost_per_byte) * 3;
+
       const result = await wallet.signAndSendTransactions({
         transactions: [{
           receiverId: storeSelected.name,
@@ -87,7 +93,7 @@ const MintNft = ({ stores }) => {
                 methodName: 'nft_mint',
                 args,
                 gas: "300000000000000",
-                deposit: "10000000000000000000000"
+                deposit: estimated_cost
               },
             },
           ],
