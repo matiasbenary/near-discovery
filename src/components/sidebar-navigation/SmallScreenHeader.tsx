@@ -1,44 +1,38 @@
+import { Button, Dropdown } from '@near-pagoda/ui';
+import { MagnifyingGlass, WifiHigh } from '@phosphor-icons/react';
 import Image from 'next/image';
-import { useCallback } from 'react';
+import { useRouter } from 'next/router';
+import { useContext } from 'react';
+import styled from 'styled-components';
 
-import { useBosComponents } from '@/hooks/useBosComponents';
-import { useSignInRedirect } from '@/hooks/useSignInRedirect';
-import { useAuthStore } from '@/stores/auth';
-import { useVmStore } from '@/stores/vm';
+import { networkId } from '@/config';
 
-import { Button } from '../lib/Button';
-import { VmComponent } from '../vm/VmComponent';
+import { NearContext } from '../wallet-selector/WalletSelector';
 import NearIconSvg from './icons/near-icon.svg';
 import { useNavigationStore } from './store';
 import * as S from './styles';
-import { LargeScreenProfileDropdown } from './LargeScreenProfileDropdown';
+import { UserDropdownMenu } from './UserDropdownMenu';
+
+const Redirect = styled.a<{ selected?: boolean }>`
+  text-decoration: none;
+  color: #444;
+`;
 
 export const SmallScreenHeader = () => {
-  const components = useBosComponents();
+  const router = useRouter();
+  const redirect = (url: string) => () => router.push(url);
   const isOpenedOnSmallScreens = useNavigationStore((store) => store.isOpenedOnSmallScreens);
   const toggleExpandedSidebarOnSmallScreens = useNavigationStore((store) => store.toggleExpandedSidebarOnSmallScreens);
   const setNavigation = useNavigationStore((store) => store.set);
   const showDrawerCollapse = useNavigationStore((store) => store.isOpenedOnSmallScreens && !!store.expandedDrawer);
   const expandedDrawerTitle = useNavigationStore((store) => store.expandedDrawerTitle);
+  const { wallet, signedAccountId } = useContext(NearContext);
 
-  const near = useVmStore((store) => store.near);
-  const availableStorage = useAuthStore((store) => store.availableStorage);
-  const availableStorageDisplay = availableStorage?.gte(10) ? availableStorage.div(1000).toFixed(2) : '0';
-  const logOut = useAuthStore((store) => store.logOut);
-  const signedIn = useAuthStore((store) => store.signedIn);
-  const { requestAuthentication } = useSignInRedirect();
-
-  const handleSignIn = () => {
-    requestAuthentication();
+  const preventRedirect = (network: string) => (e: React.MouseEvent) => {
+    if (networkId == network) {
+      e.preventDefault();
+    }
   };
-  const handleCreateAccount = () => {
-    requestAuthentication(true);
-  };
-
-  const withdrawTokens = useCallback(async () => {
-    if (!near) return;
-    await near.contract.storage_withdraw({}, undefined, '1');
-  }, [near]);
 
   return (
     <S.SmallScreenHeader>
@@ -63,28 +57,43 @@ export const SmallScreenHeader = () => {
           <Image src={NearIconSvg} alt="NEAR" />
         </S.SmallScreenHeaderLogo>
       )}
-
-      {signedIn ? (
-        <S.SmallScreenHeaderActions $hidden={isOpenedOnSmallScreens}>
-          <LargeScreenProfileDropdown />
-
-          {/* <VmComponent
-            showLoadingSpinner={false}
-            src={components.navigation.smallScreenHeader}
-            props={{ availableStorage: availableStorageDisplay, withdrawTokens, logOut }}
-          /> */}
+      {signedAccountId ? (
+        <S.SmallScreenHeaderActions $hidden={isOpenedOnSmallScreens} $gap="16px">
+          <Button label="search" icon={<MagnifyingGlass />} variant="secondary" onClick={redirect('/search')} />
+          <UserDropdownMenu />
         </S.SmallScreenHeaderActions>
       ) : (
         <>
           <Button
-            label="Sign-up or Login"
+            label="Login"
             variant="primary"
-            onClick={handleCreateAccount}
+            onClick={wallet?.signIn}
             style={{ alignSelf: 'center', marginRight: '1rem' }}
           />
         </>
       )}
+      <Dropdown.Root>
+        <Dropdown.Trigger asChild>
+          <Button
+            label={networkId}
+            icon={<WifiHigh fill="bold" style={{ color: networkId == 'mainnet' ? '#0072de' : '#d14e00' }} />}
+            fill="outline"
+            style={{ alignSelf: 'center' }}
+            type="button"
+          />
+        </Dropdown.Trigger>
 
+        <Dropdown.Content>
+          <Dropdown.Section>
+            <Redirect href="https://dev.near.org" target="_blank" onClick={preventRedirect('mainnet')}>
+              <Dropdown.Item>Mainnet</Dropdown.Item>
+            </Redirect>
+            <Redirect href="https://test.near.org" target="_blank" onClick={preventRedirect('testnet')}>
+              <Dropdown.Item>Testnet</Dropdown.Item>
+            </Redirect>
+          </Dropdown.Section>
+        </Dropdown.Content>
+      </Dropdown.Root>
       <S.SmallScreenHeaderIconButton
         type="button"
         aria-label="Expand/Collapse Menu"

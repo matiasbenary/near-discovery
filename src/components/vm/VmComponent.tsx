@@ -1,31 +1,28 @@
-import { useBosLoaderStore } from '@/stores/bos-loader';
-import { useVmStore } from '@/stores/vm';
+import dynamic from 'next/dynamic';
 
-import { Spinner } from '../lib/Spinner';
+import { useBosLoaderStore } from '@/stores/bos-loader';
+
+const Component = dynamic(() => import('./VM'), {
+  ssr: false,
+  loading: () => <p style={{ padding: '1rem' }}>Loading ...</p>,
+});
 
 type Props = {
-  showLoadingSpinner?: boolean;
   src: string;
   props?: Record<string, unknown>;
 };
 
-export function VmComponent({ showLoadingSpinner = true, ...props }: Props) {
-  const { EthersProvider, ethersContext, Widget } = useVmStore();
+export function VmComponent(props: Props) {
   const redirectMapStore = useBosLoaderStore();
 
-  if (!EthersProvider || !redirectMapStore.hasResolved) {
-    if (!showLoadingSpinner) return null;
-    return <Spinner />;
-  }
-
   return (
-    <EthersProvider value={ethersContext}>
-      <Widget
+    <>
+      <Component
         config={{
           redirectMap: redirectMapStore.redirectMap,
         }}
         {...props}
       />
-    </EthersProvider>
+    </>
   );
 }

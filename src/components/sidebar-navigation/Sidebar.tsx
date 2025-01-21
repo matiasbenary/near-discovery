@@ -1,16 +1,40 @@
+import { Dropdown, SvgIcon, Tooltip } from '@near-pagoda/ui';
+import { CaretDown } from '@phosphor-icons/react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useContext } from 'react';
+import styled from 'styled-components';
 
-import { Tooltip } from '../lib/Tooltip';
+import { networkId } from '@/config';
+
+import { NearContext } from '../wallet-selector/WalletSelector';
 import NearIconSvg from './icons/near-icon.svg';
-// import { PinnedApps } from './PinnedApps';
+import { Search } from './Search';
 import { useNavigationStore } from './store';
 import * as S from './styles';
+import { UserDropdownMenu } from './UserDropdownMenu';
 import { currentPathMatchesRoute } from './utils';
-import { LargeScreenProfileDropdown } from './LargeScreenProfileDropdown';
-import { LargeScreenNameDropdown } from './LargeScreenNameDropdown';
-import { useSignInRedirect } from '@/hooks/useSignInRedirect';
-import { useAuthStore } from '@/stores/auth';
+
+const Redirect = styled.a<{ selected?: boolean }>`
+  text-decoration: none;
+  color: #444;
+`;
+
+const Badge = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: ${() => (networkId === 'mainnet' ? '#0072de' : '#d14e00')};
+  background-color: ${() => (networkId === 'mainnet' ? '#0084f116' : '#f9900026')};
+  text-transform: capitalize;
+  border-radius: 0.25rem;
+  letter-spacing: 0.05em;
+`;
 
 export const Sidebar = () => {
   const router = useRouter();
@@ -18,21 +42,29 @@ export const Sidebar = () => {
   const isSidebarExpanded = useNavigationStore((store) => store.isSidebarExpanded && !store.expandedDrawer);
   const isOpenedOnSmallScreens = useNavigationStore((store) => store.isOpenedOnSmallScreens);
   const toggleExpandedSidebar = useNavigationStore((store) => store.toggleExpandedSidebar);
-  // const toggleExpandedDrawer = useNavigationStore((store) => store.toggleExpandedDrawer);
   const handleBubbledClickInSidebar = useNavigationStore((store) => store.handleBubbledClickInSidebar);
-  const { requestAuthentication } = useSignInRedirect();
   const tooltipsDisabled = isSidebarExpanded;
-  const signedIn = useAuthStore((store) => store.signedIn);
-  const signedAccountId = useAuthStore((store) => store.accountId);
+  const { wallet, signedAccountId } = useContext(NearContext);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isOpenNetwork, setIsOpenNetwork] = useState(false);
 
-  const handleSignIn = () => {
-    requestAuthentication(true);
+  const preventRedirect = (network: string) => (e: React.MouseEvent) => {
+    if (networkId == network) {
+      e.preventDefault();
+    }
   };
 
-  const isNavigationItemActive = (route: string | string[], exactMatch = false) => {
-    if (expandedDrawer) return false;
-    return currentPathMatchesRoute(router.asPath, route, exactMatch);
-  };
+  const isNavigationItemActive = useCallback(
+    (route: string | string[], exactMatch = false) => {
+      if (expandedDrawer) return false;
+      return currentPathMatchesRoute(router.asPath, route, exactMatch);
+    },
+    [expandedDrawer, router.asPath],
+  );
+
+  useEffect(() => {
+    isNavigationItemActive('/documentation') && isSidebarExpanded && toggleExpandedSidebar();
+  }, [router.asPath, isNavigationItemActive, isSidebarExpanded, toggleExpandedSidebar]);
 
   return (
     <S.Sidebar
@@ -45,11 +77,57 @@ export const Sidebar = () => {
           <S.Logo href="/" aria-label="Go Home">
             <Image src={NearIconSvg} alt="NEAR" />
           </S.Logo>
+          <S.Network>
+            <Dropdown.Root open={isOpenNetwork} onOpenChange={(open) => setIsOpenNetwork(open)}>
+              <Dropdown.Trigger asChild>
+                <Badge>
+                  {networkId}{' '}
+                  <SvgIcon
+                    icon={<CaretDown />}
+                    size="xs"
+                    style={{
+                      marginBottom: '1px',
+                      transform: isOpenNetwork ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'all 200ms',
+                    }}
+                  />
+                </Badge>
+              </Dropdown.Trigger>
+              <Dropdown.Content>
+                <Dropdown.Section>
+                  <Redirect href="https://dev.near.org" target="_blank" onClick={preventRedirect('mainnet')}>
+                    <Dropdown.Item>Mainnet</Dropdown.Item>
+                  </Redirect>
+                  <Redirect href="https://test.near.org" target="_blank" onClick={preventRedirect('testnet')}>
+                    <Dropdown.Item>Testnet</Dropdown.Item>
+                  </Redirect>
+                </Dropdown.Section>
+              </Dropdown.Content>
+            </Dropdown.Root>
+          </S.Network>
 
           <S.ToggleExpandButton type="button" aria-label="Expand/Collapse Menu" onClick={toggleExpandedSidebar}>
             <i className={`ph-bold ${isSidebarExpanded ? 'ph-arrow-line-left' : 'ph-list'}`} />
           </S.ToggleExpandButton>
         </S.Top>
+        <S.SearchSection
+          $expanded={isSidebarExpanded}
+          onClick={() => {
+            if (!isSidebarExpanded) {
+              toggleExpandedSidebar();
+              setTimeout(() => {
+                inputRef.current?.focus();
+              }, 200);
+            }
+          }}
+        >
+          <Search inputRef={inputRef} />
+          <Tooltip content="Search" side="right" disabled={tooltipsDisabled}>
+            <S.SearchIconWrapper $expanded={isSidebarExpanded}>
+              <i className="ph-bold ph-magnifying-glass" />
+            </S.SearchIconWrapper>
+          </Tooltip>
+        </S.SearchSection>
 
         <S.Section>
           <S.Stack $gap="0.5rem">
@@ -60,12 +138,6 @@ export const Sidebar = () => {
               </S.NavigationItem>
             </Tooltip>
 
-            {/* <Tooltip content="Activity" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem $active={isNavigationItemActive('/activity')} $type="featured" href="/activity">
-                <i className="ph-bold ph-pulse" />
-                <span>Activity</span>
-              </S.NavigationItem>
-            </Tooltip> */}
             <Tooltip content="Documentation" side="right" disabled={tooltipsDisabled}>
               <S.NavigationItem
                 $active={isNavigationItemActive('/documentation')}
@@ -77,33 +149,36 @@ export const Sidebar = () => {
               </S.NavigationItem>
             </Tooltip>
 
-            <Tooltip content="Support" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem $active={isNavigationItemActive('/contact-us')} $type="featured" href="/contact-us">
+            <Tooltip content="Community Support" side="right" disabled={tooltipsDisabled}>
+              <S.NavigationItem $active={isNavigationItemActive('/communities')} $type="featured" href="/communities">
                 <i className="ph-bold ph-question" />
-                <span>Support</span>
+                <span>Community Support</span>
               </S.NavigationItem>
             </Tooltip>
-
-            {/* <Tooltip content="Discover" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem
-                as="button"
-                type="button"
-                $active={isNavigationItemActive(['/applications', '/components', '/gateways'])}
-                $expanded={expandedDrawer === 'discover'}
-                $type="featured"
-                onClick={(event) => toggleExpandedDrawer('discover', event)}
-              >
-                <i className="ph-bold ph-shapes" />
-                <span>Discover</span>
-              </S.NavigationItem>
-            </Tooltip> */}
           </S.Stack>
         </S.Section>
 
-        {/* <PinnedApps /> */}
-
         <S.Section>
-          <S.SectionLabel>Discover </S.SectionLabel>
+          <S.SectionLabel>Developer Resources </S.SectionLabel>
+
+          <S.Stack $gap="0.5rem">
+            <Tooltip content="Toolbox" side="right" disabled={tooltipsDisabled}>
+              <S.NavigationItem $active={isNavigationItemActive('/tools')} $type="featured" href="/tools">
+                <i className="ph-toolbox ph-bold" />
+                <span>Toolbox</span>
+              </S.NavigationItem>
+            </Tooltip>
+
+            <Tooltip content="Web3 Architectures (soon)" side="right" disabled={true}>
+              <S.NavigationItem $active={isNavigationItemActive('/architecture')} $type="featured" href="#">
+                <i className="ph-app-window ph-bold" />
+                <span>Web3 Architectures</span>
+              </S.NavigationItem>
+            </Tooltip>
+          </S.Stack>
+        </S.Section>
+        <S.Section>
+          <S.SectionLabel> Discover </S.SectionLabel>
 
           <S.Stack $gap="0.5rem">
             <Tooltip content="Applications" side="right" disabled={tooltipsDisabled}>
@@ -114,49 +189,22 @@ export const Sidebar = () => {
             </Tooltip>
 
             <Tooltip content="Events" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem $active={false} $type="featured" href="https://near.org/events" target="_blank">
+              <S.NavigationItem $active={isNavigationItemActive('/events')} $type="featured" href="/events">
                 <i className="ph-calendar ph-bold" />
                 <span>Events</span>
-                <span className="ph-bold ph-arrow-square-out ms-auto outline-none" />
               </S.NavigationItem>
             </Tooltip>
-
-            {/* <Tooltip content="More" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem
-                as="button"
-                type="button"
-                $active={false}
-                $expanded={expandedDrawer === 'marketing'}
-                $type="featured"
-                onClick={(event) => toggleExpandedDrawer('marketing', event)}
-              >
-                <i className="ph-bold ph-dots-three-outline-vertical" />
-                <span>More</span>
-              </S.NavigationItem>
-            </Tooltip> */}
 
             <Tooltip content="News" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem
-                $active={isNavigationItemActive('/nearweekapp.near/widget/nearweek.com')}
-                $type="featured"
-                href="/nearweekapp.near/widget/nearweek.com"
-              >
+              <S.NavigationItem $active={isNavigationItemActive('/newsletter')} $type="featured" href="/newsletter">
                 <i className="ph-newspaper ph-bold" />
                 <span>News</span>
-              </S.NavigationItem>
-            </Tooltip>
-
-            <Tooltip content="Blog" side="right" disabled={tooltipsDisabled}>
-              <S.NavigationItem $active={false} $type="featured" href="https://near.org/blog" target="_blank">
-                <i className="ph-bold ph-chat-centered-text" />
-                <span>Blog</span>
-                <span className="ph-bold ph-arrow-square-out ms-auto outline-none" />
               </S.NavigationItem>
             </Tooltip>
           </S.Stack>
         </S.Section>
 
-        <S.Section style={{ flexGrow: 1 }}>
+        <S.Section style={{ flexGrow: 1, borderBottom: 'none' }}>
           <S.SectionLabel>Resources </S.SectionLabel>
 
           <S.Stack $gap="0.5rem">
@@ -186,41 +234,30 @@ export const Sidebar = () => {
 
             <Tooltip content="Get Funding" side="right" disabled={tooltipsDisabled}>
               <S.NavigationItem
-                $active={isNavigationItemActive('/ecosystem/get-funding')}
+                $active={false}
                 $type="featured"
-                href="/ecosystem/get-funding"
+                href="https://near.org/ecosystem/get-funding"
+                target="_blank"
               >
                 <i className="ph-bold ph-coin-vertical" />
                 <span>Get Funding</span>
+                <span className="ph-bold ph-arrow-square-out ms-auto outline-none" />
               </S.NavigationItem>
             </Tooltip>
           </S.Stack>
         </S.Section>
-
-        {/* TODO: Improve handling the sidebar opening */}
-        <S.LoginSection
-          onFocus={() => {
-            !isSidebarExpanded && toggleExpandedSidebar();
-          }}
-        >
-          {signedIn ? (
-            <Tooltip content={signedAccountId} side="right" disabled={tooltipsDisabled}>
-              <S.LoginItem $active={false} $type="featured">
-                <LargeScreenProfileDropdown />
-                <LargeScreenNameDropdown />
-              </S.LoginItem>
-            </Tooltip>
+        <S.ProfileDropdownSection $expanded={isSidebarExpanded}>
+          {signedAccountId ? (
+            <UserDropdownMenu collapsed={!isSidebarExpanded} />
           ) : (
-            <Tooltip content="Sign-up or Login" side="right" disabled={tooltipsDisabled}>
-              <S.LoginItem $active={false} $type="featured" onClick={handleSignIn}>
-                <i className="ph-bold ph-keyhole" />
-                <span>Sign-up or Login</span>
+            <Tooltip content="Login" side="right" disabled={tooltipsDisabled} asChild>
+              <S.LoginItem $active={false} $type="featured" onClick={wallet?.signIn}>
+                <i className="ph-bold ph-user" />
+                <span>Login</span>
               </S.LoginItem>
             </Tooltip>
           )}
-        </S.LoginSection>
-
-        {/* <LargeScreenProfileDropdown /> */}
+        </S.ProfileDropdownSection>
       </S.OverflowContainChild>
     </S.Sidebar>
   );

@@ -1,31 +1,27 @@
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
-import { RootContentContainer } from '@/components/lib/Container';
+import { RootContentContainer } from '@/components/RootContentContainer';
 import { VmComponent } from '@/components/vm/VmComponent';
+import { NearContext } from '@/components/wallet-selector/WalletSelector';
+import { privacyDomainName, termsDomainName } from '@/config';
 import { useBosComponents } from '@/hooks/useBosComponents';
 import { useGatewayEvents } from '@/hooks/useGatewayEvents';
 import { useSimpleLayout } from '@/hooks/useLayout';
-import { useAuthStore } from '@/stores/auth';
-import { useCurrentComponentStore } from '@/stores/current-component';
-import { privacyDomainName, termsDomainName } from '@/utils/config';
 import type { NextPageWithLayout } from '@/utils/types';
 
 const EmbedComponentPage: NextPageWithLayout = () => {
   const router = useRouter();
   const components = useBosComponents();
-  const authStore = useAuthStore();
-  const setComponentSrc = useCurrentComponentStore((store) => store.setSrc);
+  const { wallet } = useContext(NearContext);
   const componentSrc = `${router.query.accountId}/widget/${router.query.componentName}`;
   const [componentProps, setComponentProps] = useState<Record<string, unknown>>({});
   const { emitGatewayEvent, shouldPassGatewayEventProps } = useGatewayEvents();
 
   useEffect(() => {
-    setComponentSrc(componentSrc);
-  }, [setComponentSrc, componentSrc]);
-
-  useEffect(() => {
-    setComponentProps(router.query);
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(urlSearchParams.entries());
+    setComponentProps(params);
   }, [router.query]);
 
   return (
@@ -37,7 +33,7 @@ const EmbedComponentPage: NextPageWithLayout = () => {
           emitGatewayEvent: shouldPassGatewayEventProps(router.query.accountId as string)
             ? emitGatewayEvent
             : undefined,
-          logOut: authStore.logOut,
+          logOut: wallet?.signOut,
           targetComponent: componentSrc,
           targetProps: componentProps,
           termsDomainName,

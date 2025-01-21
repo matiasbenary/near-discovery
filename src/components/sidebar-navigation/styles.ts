@@ -70,6 +70,8 @@ export const Logo = styled(Link)`
   }
 `;
 
+export const Network = styled.div``;
+
 export const ToggleExpandButton = styled.button`
   all: unset;
   box-sizing: border-box;
@@ -108,7 +110,6 @@ export const Section = styled.div<{
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid var(--sand6);
-  overflow: hidden;
 
   &:last-child {
     border-bottom: none;
@@ -231,7 +232,7 @@ export const LoginItem = styled.button<{
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--violet11);
+  color: var(--sand11);
   font-size: 0.875rem;
   line-height: 1.2;
   letter-spacing: 0.28px;
@@ -241,10 +242,10 @@ export const LoginItem = styled.button<{
   transition: all 150ms;
 
   &:hover {
-    color: var(--violet12);
+    color: var(--sand12);
 
     i {
-      background: var(--violet3);
+      background: var(--sand3);
     }
 
     ${NavigationItemThumbnail} {
@@ -262,13 +263,13 @@ export const LoginItem = styled.button<{
 
   i {
     --outline-width: 1px;
-    --outline-color: var(--violet8);
+    --outline-color: var(--sand6);
     outline: var(--outline-width) solid var(--outline-color);
     outline-offset: calc(var(--outline-width) * -1);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--violet8);
+    color: currentColor;
     font-size: 1.25rem;
     border-radius: 4px;
     width: 2.25rem;
@@ -282,6 +283,7 @@ export const LoginItem = styled.button<{
     overflow: hidden;
     text-overflow: ellipsis;
     transition: all var(--sidebar-expand-transition-speed);
+    font-weight: 600;
   }
 
   ${(p) =>
@@ -605,13 +607,13 @@ export const Sidebar = styled.div<{
           ${NavigationItem} span,
           ${SectionLabelIconLink},
           ${SectionLabel},
-          ${Logo} {
+          ${Logo},
+          ${Network} {
             pointer-events: none;
             opacity: 0;
             padding: 0;
             width: 0;
           }
-
           ${SectionLabel} {
             margin-bottom: -2rem;
           }
@@ -657,13 +659,23 @@ export const LargeScreenHeader = styled.header<{
   }
 `;
 
-export const LargeScreenHeaderActionWrapper = styled.div`
+export const LargeScreenHeaderActionWrapper = styled.div<{
+  $width?: string;
+  $alignItems?: string;
+  $justifyContent?: string;
+}>`
   margin-left: -2px;
   display: flex;
   height: 40px;
-  width: 40px;
-  align-items: center;
-  justify-content: center;
+  width: ${(p) => p.$width ?? '40px'};
+  align-items: ${(p) => p.$alignItems ?? 'center'};
+  justify-content: ${(p) => p.$justifyContent ?? 'center'};
+
+  @media (max-width: ${SMALL_SCREEN_LAYOUT_MAX_WIDTH}px) {
+    .profile-dropdown-name {
+      display: none;
+    }
+  }
 `;
 
 export const LargeScreenHeaderNameWrapper = styled.div`
@@ -758,12 +770,14 @@ export const SmallScreenHeaderTitle = styled.p`
 
 export const SmallScreenHeaderActions = styled.div<{
   $hidden: boolean;
+  $gap?: string;
 }>`
   display: flex;
   align-items: center;
   height: 100%;
   opacity: 1;
   transition: all var(--sidebar-expand-transition-speed);
+  gap: ${(p) => p.$gap ?? 'unset'};
 
   ${(p) =>
     p.$hidden
@@ -868,5 +882,191 @@ export const Drawer = styled.div<{
             width: 0;
             opacity: 0;
           `}
+  }
+`;
+
+export const ProfileDropdownSection = styled(Section)<{
+  $expanded: boolean;
+}>`
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  border-top: 1px solid var(--sand6);
+
+  @media (min-width: ${SMALL_SCREEN_LAYOUT_MAX_WIDTH}px) {
+    ${(p) =>
+      p.$expanded
+        ? css`
+            .profile-dropdown-name {
+              visibility: visible;
+            }
+          `
+        : css`
+            .profile-dropdown-name {
+              visibility: hidden;
+            }
+          `}
+  }
+  @media (max-width: ${SMALL_SCREEN_LAYOUT_MAX_WIDTH}px) {
+    display: none;
+  }
+`;
+
+export const SearchSection = styled(Section)<{
+  $expanded: boolean;
+}>`
+  padding: 0 1rem;
+  overflow: visible;
+
+  @media (min-width: ${SMALL_SCREEN_LAYOUT_MAX_WIDTH}px) {
+    ${(p) =>
+      p.$expanded
+        ? css`
+            ${SearchIconWrapper} {
+              display: none;
+            }
+            ${SearchWrapper} {
+              display: flex;
+            }
+          `
+        : css`
+            ${SearchIconWrapper} {
+              display: block;
+            }
+            ${SearchWrapper} {
+              display: none;
+            }
+          `}
+  }
+  @media (max-width: ${SMALL_SCREEN_LAYOUT_MAX_WIDTH}px) {
+    display: none;
+  }
+`;
+
+export const SearchWrapper = styled.div`
+  position: relative;
+`;
+
+export const SearchContainer = styled.div<{ $isFocus?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e3e3e0;
+  border-radius: 25px;
+  padding: 5px 10px;
+  width: 250px;
+
+  transition: all 0.3s ease-in-out;
+  ${(props) =>
+    props.$isFocus &&
+    css`
+      box-shadow: 0 0 5px 2px rgba(136, 0, 255, 0.5);
+      border-color: #cfccf5;
+    `}
+`;
+
+export const TabContainer = styled.div`
+  display: flex;
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 12px 0;
+`;
+
+export const Tab = styled.button<{ $active?: boolean; $isFirst?: boolean; $isLast?: boolean }>`
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  flex: 1;
+  border-bottom: 2px solid ${(props) => (props.$active ? '#007bff' : 'transparent')};
+  background-color: white;
+  font-size: 12px;
+  &:hover {
+    border-bottom: 2px solid #007bff;
+  }
+`;
+
+export const ResultsPopup = styled.div`
+  width: 550px;
+  border-radius: 10px;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 0 24px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+`;
+
+export const ResultItem = styled.div`
+  padding: 10px;
+  height: 300px;
+  overflow-y: scroll;
+`;
+
+export const Footer = styled.div`
+  text-align: right;
+  width: 100%;
+  padding: 16px;
+  border-radius: 0 0 10px 10px;
+`;
+
+export const SearchIconWrapper = styled.div<{
+  $expanded: boolean;
+}>`
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sand11);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  letter-spacing: 0.28px;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 150ms;
+  padding-bottom: 1rem;
+
+  &:hover {
+    color: var(--sand12);
+
+    i {
+      background: var(--sand3);
+    }
+  }
+
+  &:focus-visible {
+    i {
+      --outline-color: var(--violet5);
+      --outline-width: 2px;
+    }
+  }
+
+  i {
+    --outline-width: 1px;
+    --outline-color: var(--sand6);
+    outline: var(--outline-width) solid var(--outline-color);
+    outline-offset: calc(var(--outline-width) * -1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+    font-size: 1.25rem;
+    border-radius: 4px;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    background: var(--white);
+    transition: all 150ms, outline 0ms;
+  }
+
+  ${(p) =>
+    p.$expanded
+      ? css`
+          // font-weight: 600;
+          // color: var(--sand12);
+          i {
+            // --outline-color: var(--sand12) !important;
+            // --outline-width: 2px;
+          }
+        `
+      : undefined}
   }
 `;
